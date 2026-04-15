@@ -9,34 +9,35 @@ from transformers import AutoTokenizer, BertTokenizer
 import itertools
 from collections import OrderedDict
 from transformers.models.bert import BertForSequenceClassification, BertForMaskedLM
-from dataset import SMSDataset, AgNewsDataset, BBCDataset, CTDataset
+from dataset import PIDataset, JCDataset, SGDataset
 
 class Config():
     def __init__(self):
         self.batch_size = 8
-        self.epochs = 1
+        self.inner_iterations = 1
         self.log_freq = 100
-        self.data_path = '../../data/sms/333/test.csv'
-        self.model_path = '../../bert-base-uncased'
-        self.ckpt_path = ''
-        self.weight_path = ''
+        self.data_path = '/home/zxh/code/EvoShield/data/prompt-injections/full_test.csv'
+        self.model_path = '/mnt/storage/model/bert-base-uncased/'
+        self.ckpt_path = '/home/zxh/code/EvoShield/ckpts/2026-03-11T00-03-49/final_model.pt'
+        self.weight_path = '/home/zxh/code/EvoShield/ckpts/2026-03-11T00-03-49/final_weight.pt'
         self.eval_freq = 50
         self.max_seq_length = 512
         self.pattern_ids = 3
         self.classes_num = 2
-        self.task_name = 'SMS'
+        self.task_name = 'PI'
 
         self.Dataset = eval(self.task_name + 'Dataset')(self.data_path, self.model_path, self.pattern_ids, self.max_seq_length)
 
 def collate_fn(batch):
-    input_ids, token_type_ids, attention_mask, mlm_labels, labels = zip(*batch)
+    input_ids, token_type_ids, attention_mask, mlm_labels, labels, texts = zip(*batch)
     input_ids = torch.stack([w.squeeze() for w in input_ids])
     token_type_ids = torch.stack([w.squeeze() for w in token_type_ids])
     attention_mask = torch.stack([w.squeeze() for w in attention_mask])
     mlm_labels = torch.stack([torch.Tensor(mlm_label).long() for mlm_label in mlm_labels])
     labels = torch.stack([torch.Tensor([label]).long() for label in labels])
+    texts = list(texts)
 
-    return input_ids, token_type_ids, attention_mask, mlm_labels, labels
+    return input_ids, token_type_ids, attention_mask, mlm_labels, labels, texts
 
 class PteModel(nn.Module):
     def __init__(self, config):
@@ -105,7 +106,7 @@ def trainer():
     config = Config()
     config = setup_training(config)
     train_iter, m2c_tensor, filler_len = prepare_data_loader(config)
-    total_step = config.epochs * len(train_iter)
+    total_step = config.inner_iterations * len(train_iter)
     model = PteModel(config)
 
     model, criterion = prepare_model_and_optimizer(config, model, m2c_tensor, filler_len, total_step)
@@ -114,7 +115,7 @@ def trainer():
     all_labels = []
     for i, batch in enumerate(train_iter):
         model.eval()
-        input_ids, token_type_ids, attention_mask, mlm_labels, labels = [w.to(config.device) for w in batch]
+        input_ids, token_type_ids, attention_mask, mlm_labels, labels, texts = [w.to(config.device) if isinstance(w, torch.Tensor) else w for w in batch]
 
         logit, weight = model(input_ids=input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)
         predictions = criterion(logit, mlm_labels, weight)

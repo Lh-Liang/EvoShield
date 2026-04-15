@@ -3,21 +3,38 @@ currentPath="$( cd "$( dirname "$0"  )" && pwd  )"
 cd ..
 pwdPath="$(pwd)"
 
-MODEL_PATH=../bert-base-uncased
-TRAIN_DATA_PATH=../data/agnews/333/train.csv
-EVAL_DATA_PATH=../data/agnews/333/val.csv
+#python -m src.train_pte \
+#  --epochs 200 \
+#  --batch_size 32 \
+#  --log_freq 100 \
+#  --task_name 'SG' \
+#  --model_path /home/han/llh/EvoShield/bert-base-uncased \
+#  --train_data_path /home/han/llh/EvoShield/data/safe-guard-prompt-injection/full_train_16.csv \
+#  --test_data_path /home/han/llh/EvoShield/data/safe-guard-prompt-injection/full_test.csv
+#
+#python -m src.train_pte \
+#  --epochs 200 \
+#  --batch_size 32 \
+#  --log_freq 100 \
+#  --task_name 'PI' \
+#  --model_path /home/han/llh/EvoShield/bert-base-uncased \
+#  --train_data_path /home/han/llh/EvoShield/data/prompt-injections/full_train_16.csv \
+#  --test_data_path /home/han/llh/EvoShield/data/prompt-injections/full_test.csv
 
-python -m src.train \
-  --seed 666 \
-  --epochs 2000 \
-  --batch_size 8 \
-  --max_seq_length 512 \
-  --learning_rate 5e-5 \
+python -m src.train_pte \
+  --epochs 200 \
+  --batch_size 32 \
   --log_freq 100 \
-  --eval_freq 500 \
-  --weight_lr 9e-5 \
-  --classes_num 4 \
-  --task_name 'AgNews' \
-  --model_path $MODEL_PATH \
-  --train_data_path $TRAIN_DATA_PATH \
-  --eval_data_path $EVAL_DATA_PATH
+  --task_name 'JC' \
+  --model_path /home/han/llh/EvoShield/bert-base-uncased \
+  --train_data_path /home/han/llh/EvoShield/data/jailbreak-classification-imbalanced/full_train_16.csv \
+  --test_data_path /home/han/llh/EvoShield/data/jailbreak-classification-imbalanced/full_test.csv
+
+python -m src.train_pte \
+  --epochs 200 \
+  --batch_size 32 \
+  --log_freq 100 \
+  --task_name 'JC' \
+  --model_path /home/han/llh/EvoShield/bert-base-uncased \
+  --train_data_path /home/han/llh/EvoShield/data/jailbreak-classification-balanced/full_train_16.csv \
+  --test_data_path /home/han/llh/EvoShield/data/jailbreak-classification-balanced/full_test.csv
